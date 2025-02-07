@@ -1,3 +1,5 @@
+let excelData = []; // Will store the Excel data
+
 // Define sub topics for each main topic
 const subTopics = {
     cardiology: [
@@ -164,13 +166,10 @@ subTopicFilter.addEventListener('change', filterQuestions);
 // Initial setup
 updateSubTopics();
 
-// Add this at the top of your script.js file
-let excelData = []; // Will store the Excel data
-
 // Function to read Excel file
 async function loadExcelFile() {
     try {
-        const response = await fetch('data.xlsx');
+        const response = await fetch('data.xlsx'); // Ensure this file exists in the root of your repository
         const arrayBuffer = await response.arrayBuffer();
         
         const data = new Uint8Array(arrayBuffer);
@@ -352,12 +351,15 @@ async function fetchData() {
 
     try {
         const response = await fetch(url);
-        console.log('Response:', response); // Check the response
         if (!response.ok) {
             throw new Error('Network response was not ok');
         }
         const data = await response.json();
         console.log('Data:', data); // Data ko console par dekhne ke liye
+
+        // Process the data and display it
+        excelData = data.values; // Assuming your data is in the first sheet
+        displayQuestions(excelData); // Call your function to display questions
     } catch (error) {
         console.error('Error fetching data:', error);
     }
