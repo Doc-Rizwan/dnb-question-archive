@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DNB General Medicine Question Archive</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.sheetjs.com/xlsx-0.19.3/package/dist/xlsx.full.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <h1>DNB General Medicine Question Archive</h1>
+        
+        <!-- Add tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="questions">All Questions</button>
+            <button class="tab-btn" data-tab="important">Important Topics</button>
+        </div>
+
+        <!-- Questions Tab Content -->
+        <div class="tab-content active" id="questionsTab">
+            <div class="filters">
+                <div class="filter-group">
+                    <label for="yearFilter">Year:</label>
+                    <select id="yearFilter" name="year">
+                        <option value="all">All Years</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                        <option value="2021">2021</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="topicFilter">Topic:</label>
+                    <select id="topicFilter" name="topic">
+                        <option value="all">All Topics</option>
+                        <option value="cardiology">Cardiology</option>
+                        <option value="neurology">Neurology</option>
+                        <option value="endocrinology">Endocrinology</option>
+                        <option value="respiratory">Respiratory</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="subTopicFilter">Sub Topic:</label>
+                    <select id="subTopicFilter" name="subTopic">
+                        <option value="all">All Sub Topics</option>
+                        <!-- Sub topics will be populated dynamically based on main topic -->
+                    </select>
+                </div>
+            </div>
+            <div class="questions-container" id="questionsContainer">
+                <!-- Questions will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Important Topics Tab Content -->
+        <div class="tab-content" id="importantTab">
+            <div class="important-topics">
+                <h2>Important Topics</h2>
+                <!-- Add your important topics content here -->
+                <div class="topic-list">
+                    <!-- Topics will be added here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html> 
