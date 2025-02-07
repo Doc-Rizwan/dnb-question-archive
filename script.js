@@ -1,4 +1,4 @@
-let excelData = []; // Will store the Excel data
+let excelData = []; // Will store the Google Sheets data
 
 // Define sub topics for each main topic
 const subTopics = {
@@ -108,21 +108,11 @@ function filterQuestions() {
             return;
         }
 
-        // Get column names from Excel data
-        const yearColumnName = Object.keys(excelData[0])[0];
-        const topicColumnName = Object.keys(excelData[0])[3];
-        const subTopicColumnName = Object.keys(excelData[0])[4];
-
         const filteredQuestions = excelData.filter(q => {
-            const yearMatch = selectedYear === 'all' || 
-                            q[yearColumnName]?.toString() === selectedYear;
-            
-            const topicMatch = selectedTopic === 'all' || 
-                            q[topicColumnName]?.toString().toLowerCase().replace(/[^a-z0-9]/g, '_') === selectedTopic;
-            
-            const subTopicMatch = selectedSubTopic === 'all' || 
-                                q[subTopicColumnName]?.toString().toLowerCase().replace(/[^a-z0-9]/g, '_') === selectedSubTopic;
-            
+            const yearMatch = selectedYear === 'all' || q[Object.keys(excelData[0])[0]] === selectedYear;
+            const topicMatch = selectedTopic === 'all' || q[Object.keys(excelData[0])[3]].toString().toLowerCase().replace(/[^a-z0-9]/g, '_') === selectedTopic;
+            const subTopicMatch = selectedSubTopic === 'all' || q[Object.keys(excelData[0])[4]].toString().toLowerCase().replace(/[^a-z0-9]/g, '_') === selectedSubTopic;
+
             return yearMatch && topicMatch && subTopicMatch;
         });
 
@@ -166,54 +156,76 @@ subTopicFilter.addEventListener('change', filterQuestions);
 // Initial setup
 updateSubTopics();
 
-// Function to read Excel file
-async function loadExcelFile() {
+// Function to fetch data from Google Sheets
+async function fetchData() {
+    const sheetID = '1BdPa8OzimTsj3UruekG0guU57lARJ66PoA6dC_w52TQ'; // Yahan apna Google Sheet ID daalein
+    const apiKey = 'AIzaSyCL-CtAL9_tKbqpK4aVw2q_9lzsFK_Rjfo'; // Yahan apna Google API Key daalein
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetID}/values/Sheet1?key=${apiKey}`;
+
     try {
-        const response = await fetch('data.xlsx'); // Ensure this file exists in the root of your repository
-        const arrayBuffer = await response.arrayBuffer();
-        
-        const data = new Uint8Array(arrayBuffer);
-        const workbook = XLSX.read(data, { type: 'array' });
-        
-        const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
-        const jsonData = XLSX.utils.sheet_to_json(firstSheet);
-        
-        excelData = jsonData;
-        
-        // Update filters with the new data
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        const data = await response.json();
+        console.log('Data:', data); // Data ko console par dekhne ke liye
+
+        // Process the data and display it
+        excelData = data.values; // Assuming your data is in the first sheet
+        displayQuestions(excelData); // Call your function to display questions
+
+        // Populate filters with the new data
         populateYearFilter();
         populateTopicFilter();
-        
-        // Display all questions initially
-        displayQuestions(excelData);
-        
-        console.log('Excel data loaded:', excelData);
+        populateSubTopicFilter();
     } catch (error) {
-        console.error('Error loading Excel file:', error);
-        alert('Error loading data. Please make sure data.xlsx exists in the app folder.');
+        console.error('Error fetching data:', error);
     }
 }
 
-// Call loadExcelFile when page loads
-window.addEventListener('DOMContentLoaded', loadExcelFile);
+// Call the fetchData function when the page loads
+window.addEventListener('DOMContentLoaded', fetchData);
 
-// Update getUniqueYears function to handle your Excel structure
+// Function to get unique years from the first column
 function getUniqueYears() {
     if (!excelData.length) return [];
     
-    // Get the name of the year column from your Excel file
     const yearColumnName = Object.keys(excelData[0])[0]; // Assuming first column is year
-    
     const uniqueYears = [...new Set(excelData.map(item => item[yearColumnName]))];
-    return uniqueYears.sort((a, b) => b - a); // Sort in descending order
+    
+    // Filter out "Year" and "Month" headers
+    const filteredYears = uniqueYears.filter(year => year && year.trim() !== "Year" && year.trim() !== "Month").sort((a, b) => b - a); // Remove empty, "Year", and "Month", and sort in descending order
+    console.log('Unique Years:', filteredYears);
+    return filteredYears;
+}
+
+// Function to get unique topics from the fourth column
+function getUniqueTopics() {
+    if (!excelData.length) return [];
+    
+    const topicColumnName = Object.keys(excelData[0])[3]; // Getting 4th column name
+    const uniqueTopics = [...new Set(excelData.map(item => item[topicColumnName]))];
+    return uniqueTopics.filter(topic => topic).sort(); // Remove empty topics and sort alphabetically
+}
+
+// Function to get unique sub-topics from the fifth column
+function getUniqueSubTopics() {
+    if (!excelData.length) return [];
+    
+    const subTopicColumnName = Object.keys(excelData[0])[4]; // Getting 5th column name
+    const uniqueSubTopics = [...new Set(excelData.map(item => item[subTopicColumnName]))];
+    return uniqueSubTopics.filter(subTopic => subTopic).sort(); // Remove empty sub-topics and sort alphabetically
 }
 
 // Update populateYearFilter function
 function populateYearFilter() {
     const yearFilter = document.getElementById('yearFilter');
-    yearFilter.innerHTML = '<option value="all">All Years</option>';
-    
-    getUniqueYears().forEach(year => {
+    yearFilter.innerHTML = '<option value="all">All Years</option>'; // Keep this option if you want to allow all years
+
+    // Get unique years without "Year" and "Month"
+    const uniqueYears = getUniqueYears();
+
+    uniqueYears.forEach(year => {
         const option = document.createElement('option');
         option.value = year;
         option.textContent = year;
@@ -221,50 +233,30 @@ function populateYearFilter() {
     });
 }
 
-// Update the getUniqueTopics function to handle non-string values
-function getUniqueTopics() {
-    if (!excelData.length) return [];
-    
-    // Get the name of the topic column from your Excel file (4th column)
-    const topicColumnName = Object.keys(excelData[0])[3]; // Getting 4th column name
-    
-    const uniqueTopics = [...new Set(excelData.map(item => {
-        const topic = item[topicColumnName];
-        // Convert to string and handle null/undefined
-        return topic ? topic.toString().trim() : '';
-    }))].filter(topic => topic !== ''); // Remove empty topics
-    
-    return uniqueTopics.sort(); // Sort alphabetically
-}
-
-// Update populateTopicFilter function to handle non-string values
+// Update populateTopicFilter function
 function populateTopicFilter() {
     const topicFilter = document.getElementById('topicFilter');
     topicFilter.innerHTML = '<option value="all">All Topics</option>';
     
     getUniqueTopics().forEach(topic => {
         const option = document.createElement('option');
-        // Convert to string, make lowercase for value, and handle special characters
         option.value = topic.toString().toLowerCase().replace(/[^a-z0-9]/g, '_');
         option.textContent = topic; // Keep original text for display
         topicFilter.appendChild(option);
     });
 }
 
-// Add getUniqueSubTopics function
-function getUniqueSubTopics() {
-    if (!excelData.length) return [];
+// Update populateSubTopicFilter function
+function populateSubTopicFilter() {
+    const subTopicFilter = document.getElementById('subTopicFilter');
+    subTopicFilter.innerHTML = '<option value="all">All Sub Topics</option>';
     
-    // Get the name of the sub-topic column from your Excel file (5th column)
-    const subTopicColumnName = Object.keys(excelData[0])[4]; // Getting 5th column name
-    
-    const uniqueSubTopics = [...new Set(excelData.map(item => {
-        const subTopic = item[subTopicColumnName];
-        // Convert to string and handle null/undefined
-        return subTopic ? subTopic.toString().trim() : '';
-    }))].filter(subTopic => subTopic !== ''); // Remove empty sub-topics
-    
-    return uniqueSubTopics.sort(); // Sort alphabetically
+    getUniqueSubTopics().forEach(subTopic => {
+        const option = document.createElement('option');
+        option.value = subTopic.toString().toLowerCase().replace(/[^a-z0-9]/g, '_');
+        option.textContent = subTopic; // Keep original text for display
+        subTopicFilter.appendChild(option);
+    });
 }
 
 // Update Tab functionality
@@ -342,28 +334,3 @@ function populateImportantTopics() {
 
 // Call this function when the page loads
 window.addEventListener('DOMContentLoaded', populateImportantTopics);
-
-// Function to fetch data from Google Sheets
-async function fetchData() {
-    const sheetID = '1BdPa8OzimTsj3UruekG0guU57lARJ66PoA6dC_w52TQ'; // Yahan apna Google Sheet ID daalein
-    const apiKey = 'AIzaSyCL-CtAL9_tKbqpK4aVw2q_9lzsFK_Rjfo'; // Yahan apna Google API Key daalein
-    const url = `https://sheets.googleapis.com/v4/spreadsheets/${sheetID}/values/Sheet1?key=${apiKey}`;
-
-    try {
-        const response = await fetch(url);
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        const data = await response.json();
-        console.log('Data:', data); // Data ko console par dekhne ke liye
-
-        // Process the data and display it
-        excelData = data.values; // Assuming your data is in the first sheet
-        displayQuestions(excelData); // Call your function to display questions
-    } catch (error) {
-        console.error('Error fetching data:', error);
-    }
-}
-
-// Call the fetchData function
-fetchData();
